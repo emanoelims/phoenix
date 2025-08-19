@@ -362,7 +362,7 @@ First, we'd adjust our scope struct to also include the organization:
  end
 ```
 
-Let's also assume that the current organization is part of the URL path, like `http://localhost:4000/organizations/foo/posts`. Then, we'd adjust our router to fetch the organization from the path and assign it to the scope:
+Let's also assume that the current organization is part of the URL path, like `http://localhost:4000/orgs/foo/posts`. Then, we'd adjust our router to fetch the organization from the path and assign it to the scope:
 
 ```diff
   # router.ex
@@ -422,7 +422,7 @@ end
 def on_mount(:assign_org_to_scope, _params, _session, socket), do: {:cont, socket}
 ```
 
-This way, if a route is defined like `live /organizations/:org/posts`, the `assign_org_to_scope` plug would fetch the organization from the path and assign it to the scope. This code assumes that `get_organization_by_slug!/2` raises an `Ecto.NoResultsError` which would be automatically converted to `404`, but you could also handle the error explicitly and, for example, set an error flash and redirect to another page, like a dashboard. The `get_organization_by_slug!/2` function should also rely on the current scope to filter the organizations to those the user has access to.
+This way, if a route is defined like `live /orgs/:org/posts`, the `assign_org_to_scope` plug would fetch the organization from the path and assign it to the scope. This code assumes that `get_organization_by_slug!/2` raises an `Ecto.NoResultsError` which would be automatically converted to `404`, but you could also handle the error explicitly and, for example, set an error flash and redirect to another page, like a dashboard. The `get_organization_by_slug!/2` function should also rely on the current scope to filter the organizations to those the user has access to.
 
 Then, we are ready to define a new scope in our application's `config/config.exs` to generate resources scoped to the organization:
 
@@ -436,6 +436,7 @@ config :my_app, :scopes,
     assign_key: :current_scope,
     access_path: [:organization, :id],
     route_prefix: "/orgs/:org",
+    route_access_path: [:organization, :slug],
     schema_key: :org_id,
     schema_type: :id,
     schema_table: :organizations,
@@ -462,7 +463,7 @@ defmodule MyAppWeb.ConnCase do
   ...
 
   def register_and_log_in_user_with_org(context) do
-    %{conn: conn, user: user, scope: scope} = register_and_log_in_user(context)
+    %{conn: conn, _user: user, scope: scope} = register_and_log_in_user(context)
     %{conn: conn, scope: MyApp.AccountsFixtures.organization_scope_fixture(scope)}
   end
 end
